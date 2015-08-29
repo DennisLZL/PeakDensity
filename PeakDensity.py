@@ -49,8 +49,15 @@ def densityCluster(dist, gaussian=False):
     densityDelta = pd.DataFrame({'rho': pd.Series(rho), 'delta': pd.Series(delta)})
     return densityDelta
 
-def Kclusters(dist, densityDelta, K):
-    pass
+def Kclusters(densityDelta, K):
+    pos = np.argmax(densityDelta.rho)
+    peak = densityDelta.values[pos]
+    d = []
+    for v in densityDelta.values:
+        d.append(np.sqrt(np.sum((v - peak) ** 2)))
+    poscut = np.argsort(d)[K+1]
+    return densityDelta.rho[poscut], densityDelta.delta[poscut]
+
 
 def findClusters(dist, densityDelta, rho, delta):
     peaks = np.where([x and y for x, y in zip(densityDelta['rho'] > rho, densityDelta['delta'] > delta)])[0]
@@ -76,7 +83,10 @@ if __name__ == '__main__':
             dist[i, j] = np.sqrt(np.sum((np.array(data.iloc[i, :]) - np.array(data.iloc[j, :])) ** 2))
             dist[j, i] = dist[i, j]
     res = densityCluster(dist, gaussian=False)
+
     print ggplot(aes(x='rho', y='delta'), data=res) + geom_point() + ggtitle('decision graph')
+
+
     cluster = findClusters(dist, res, np.percentile(res.rho, 80), np.percentile(res.delta, 80))
     mds = manifold.MDS(dissimilarity="precomputed")
     coords = mds.fit(dist).embedding_

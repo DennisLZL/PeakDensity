@@ -5,24 +5,28 @@ import numpy as np
 from sklearn import manifold
 from ggplot import *
 
-
-def peak_density_cluster(dist, method, gaussian=False):
-    low = 0.01
-    high = 0.02
+def peak_density_cluster(dist, per, gaussian=False):
+    # low = 0.01
+    # high = 0.02
     n = len(dist)
-    dc = np.min(dist)
-    dc_mod = np.median(dist[np.triu_indices(n, 1)]) * 0.01
+    # dc = np.min(dist)
+    # dc_mod = np.median(dist[np.triu_indices(n, 1)]) * 0.01
 
     # compute dc
-    while True:
-        neigh_rate = np.mean((np.sum(dist < dc, 0) - 1) / float(n))
-        if low < neigh_rate < high:
-            break
-        else:
-            if neigh_rate > high:
-                dc -= dc_mod
-                dc_mod /= 2
-            dc += dc_mod
+    # while True:
+    #     neigh_rate = np.mean((np.sum(dist < dc, 0) - 1) / float(n))
+    #     if low < neigh_rate < high:
+    #         break
+    #     else:
+    #         if neigh_rate > high:
+    #             dc -= dc_mod
+    #             dc_mod /= 2
+    #         dc += dc_mod
+
+    # find dc by sort
+    nr = 0.015
+    pos = np.ceil(n ** 2 * nr + n)
+    dc = np.sort(dist.flatten())[pos]
 
     # compute local density
     if gaussian:
@@ -40,14 +44,8 @@ def peak_density_cluster(dist, method, gaussian=False):
             delta[i] = np.min(peaks)
 
     # find clusters
-    if method.keys() == ['per']:
-        per = method.values()[0]
-        rho_low = np.min(rho) + (np.max(rho) - np.min(rho)) * per
-        delta_low = np.min(delta) + (np.max(delta) - np.min(delta)) * per
-    elif method.keys() == ['K']:
-        K = method.values()[0]
-
-
+    rho_low = np.min(rho) + (np.max(rho) - np.min(rho)) * per
+    delta_low = np.min(delta) + (np.max(delta) - np.min(delta)) * per
 
     peaks = list(np.where([x and y for x, y in zip(rho > rho_low, delta > delta_low)])[0])
 
@@ -81,7 +79,7 @@ if __name__ == '__main__':
     mds = manifold.MDS(dissimilarity="precomputed")
     coord = mds.fit(distance).embedding_
 
-    r, d, pk, cls = peak_density_cluster(distance, gaussian=True)
+    r, d, pk, cls = peak_density_cluster(distance, 0.3, gaussian=True)
 
     results = pd.DataFrame({'rho': pd.Series(r), 'delta': pd.Series(d), 'peak': pd.Series(pk),
                             'cluster': pd.Series(cls), 'x': pd.Series(coord[:, 0]), 'y': pd.Series(coord[:, 1])})
@@ -90,5 +88,3 @@ if __name__ == '__main__':
     g1.draw()
     g2 = ggplot(aes(x='x', y='y', color='cluster'), data=results)+geom_point()
     print g2
-
-

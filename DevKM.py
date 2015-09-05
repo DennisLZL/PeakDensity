@@ -45,4 +45,3 @@ def load_dev_data():
 
 if __name__ == '__main__':
     dev = load_dev_data()
-    print dev.data
